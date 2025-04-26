@@ -1,22 +1,24 @@
 .todo-item {
   padding: 10px;
   border: 2px solid rgba(0, 0, 0, 0.15);
+  background-color: #EEEEEE;
   border-radius: 10px;
-  margin: 10px 0;
+  margin-bottom: 15px;
 }
 
 .todo-item-header {
   width: 100%;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-.todo-item-header .fa-pencil {
-  color: #4caf50;
+.fa-pencil {
+  color: gray;
   margin-right: 10px;
 }
 
-.todo-item-header .fa-trash {
+.fa-trash {
   color: #f44336;
 }
 
@@ -43,13 +45,67 @@ p {
   opacity: 0.5;
 }
 
-.todo-completed h4,
-.todo-completed p {
+.todo-completed h4, .todo-completed p {
   text-decoration: line-through;
+  opacity: 1;
+}
+
+.subtask-completed {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.subtask-item {
+  background-color: transparent;
+  padding: 5px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin: auto;
+  gap: 15px;
 }
 
 .title-area {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+}
+.subtask-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+ 
+}
+
+@media (max-width: 600px) {
+  .todo-item {
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+
+  .todo-item p {
+    font-size: 13px;
+  }
+
+  .subtask-item {
+    gap: 10px;
+    padding: 4px;
+  }
+}
+
+@media (max-width: 400px) {
+  .todo-item {
+    padding: 6px;
+    margin-bottom: 10px;
+  }
+
+  .todo-item p {
+    font-size: 12px;
+  }
+
+  .subtask-item {
+    gap: 8px;
+    padding: 3px;
+  }
 }
