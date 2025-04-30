@@ -3,6 +3,10 @@
   background-color: white;
 }
 
+.App, .card, .primary-button, .primary-input {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -22,6 +26,51 @@
 
 .App-link {
   color: #61dafb;
+}
+
+.dark-mode {
+  background-color: #121212;
+}
+
+.dark-mode h1  {
+  color: #ffffff;
+}
+.dark-mode h2  {
+  color: #ffffff;
+}
+
+.dark-mode .card {
+  background-color: #1e1e1e;
+  border-color: #333333;
+}
+
+.dark-mode .primary-button {
+  background-color: #333333;
+  color: #ffffff;
+  border: 1px solid #555555;
+}
+
+.dark-mode .primary-button:hover {
+  background-color: #555555;
+}
+
+.dark-mode .primary-input {
+  background-color: #2a2a2a;
+  color: #ffffff;
+  border: 1px solid #444444;
+}
+
+.dark-mode .separator {
+  background-color: #333333;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes App-logo-spin {

@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState, useEffect, useCallback} from "react";
 import Card from "./components/card/Card";
 import TodoItem from "./components/todo-item/TodoItem";
 import Button from "./components/button/Button";
-import "./App.css";
 import Modal from "./components/modal/Modal";
+import Loader from "./components/loader/Loader";
 import { v4 as uuidv4 } from 'uuid';
+import "./App.css";
+
+const LOCAL_STORAGE_TODOS_KEY = "todos";
 
 const INITIAL_TODOS = [
   {
@@ -29,120 +32,122 @@ const INITIAL_TODOS = [
     completed: true,
     subtasks: []
   },
-  {
-    id: uuidv4(),
-    title: "Todo 6",
-    description: "Terminam cursul de React",
-    completed: false,
-    subtasks: []
-  },
-  {
-    id: uuidv4(),
-    title: "Todo 4",
-    description: "Lorem ipsum dolor sit amet consectetur adipisicing elit!",
-    completed: true,
-    subtasks: []
-  },
-  {
-    id: uuidv4(),
-    title: "Todo 5",
-    description: "Lorem ipsum dolor sit amet consectetur adipisicing elit!",
-    completed: true,
-    subtasks: []
-  },
 ];
 
 function App() {
-
-  const LOCAL_STORAGE_TODOS_KEY = "todos";
-  const compareTodosIdFn = (todo1, todo2) => parseInt(todo1.id) > parseInt(todo2.id) ? 1 : -1;
-  const [todos, setTodos] = React.useState(() => {
-    const storedTodos = localStorage.getItem(LOCAL_STORAGE_TODOS_KEY);
-    return storedTodos ? JSON.parse(storedTodos) : INITIAL_TODOS;
+  // --- State  ---
+  
+  const [todos, setTodos] = useState(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_TODOS_KEY);
+      return stored ? JSON.parse(stored) : INITIAL_TODOS;
+    } catch (e) {
+      console.error("Failed to parse todos from localStorage:", e);
+      return INITIAL_TODOS;
+    }
   });
 
-  React.useEffect(() => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [todoForModal, setTodoForModal] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+
+  // --- Effects ---
+  
+  useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_TODOS_KEY, JSON.stringify(todos));
   }, [todos]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
+
+  // --- Functions ---
+  
+  const onTodoCreate = useCallback((title, description, subtasks) => {
+    setTodos(prev => [...prev,
+    {
+      id: uuidv4(),
+      title,
+      description,
+      completed: false,
+      subtasks,
+    }]);
+  }, []);
+   
+  const onDeleteTodo = useCallback((id) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  }, []);
+
+  const onChangeTodo = useCallback((id, changes) => {
+    setTodos(prev => prev.map(todo => {
+      if (todo.id !== id) return todo;
+      return { ...todo, ...changes };
+    }));
+  }, []);
+
+  const onTodoModalUpdate = (id, title, description) => {
+    onChangeTodo(id, {
+      title,
+      description,
+    });
+  };
+  
   const onSubtaskCreate = (todoId, newSubtasks) => {
-    setTodos(todos => todos.map(todo => {
-        if (todo.id !== todoId) {
-          return todo;
-        }
+    setTodos(prev => prev.map(todo => (
+      todo.id === todoId 
+        ? { ...todo, subtasks: [...todo.subtasks, ...newSubtasks] }
+        : todo    
+    )));
+  };
+  
+    const onEditSubtask = (todoId, subtaskId, newTitle) => {
+      setTodos(prev => prev.map(todo => {
+        if (todo.id !== todoId) return todo;
         return {
           ...todo,
-          subtasks: [...todo.subtasks, ...newSubtasks]
+          subtasks: todo.subtasks.map(subtask =>
+            subtask.id === subtaskId ? { ...subtask, title: newTitle } : subtask
+          )
         };
-    }));
-    };
-   
-    const onEditSubtask = (todoId, subtaskId, newTitle) => {
-      setTodos(todos => todos.map(todo => {
-        if (todo.id === todoId) {
-          return { ...todo, subtasks: todo.subtasks.map(subtask => subtask.id === subtaskId ? { ...subtask, title: newTitle } : subtask) };
-        }
-        return todo;
       }));
     };
   
     const onDeleteSubtask = (todoId, subtaskId) => {
-      setTodos(todos => todos.map(todo => {
-        if (todo.id === todoId) {
-          return { ...todo, subtasks: todo.subtasks.filter(subtask => subtask.id !== subtaskId) };
-        }
-        return todo;
+      setTodos(prev => prev.map(todo => {
+        if (todo.id !== todoId) return todo;
+        return {
+          ...todo,
+          subtasks: todo.subtasks.filter(subtask => subtask.id !== subtaskId)
+        };
       }));
     };
   
     const onChangeSubtask = (todoId, subtaskId, completed) => {
-      setTodos(todos => todos.map(todo => {
-        if (todo.id === todoId) {
-          return { ...todo, subtasks: todo.subtasks.map(subtask => subtask.id === subtaskId ? { ...subtask, completed } : subtask) };
-        }
-        return todo;
+      setTodos(prev => prev.map(todo => {
+        if (todo.id !== todoId) return todo;
+        return {
+          ...todo,
+          subtasks: todo.subtasks.map(subtask =>
+            subtask.id === subtaskId ? { ...subtask, completed } : subtask
+          )
+        };
       }));
     };
 
-  const uncompletedTodos = todos.filter(todo => !todo.completed);
-  const onCreateTodoItemFn = todo =>
-    <TodoItem
-      key={todo.id}
-      todo={todo}
-      onDeleteTodo={() => onDeleteTodo(todo.id)}
-      onChangeTodo={(id, changes) => onChangeTodo(id, changes)}
-      onEditModalOpen={() => onEditModalOpen(todo)}
-      onSubtaskCreate={onSubtaskCreate}
-      onEditSubtask={onEditSubtask}
-      onDeleteSubtask={onDeleteSubtask}
-      onChangeSubtask={onChangeSubtask}
-    />
-    ;
-  const uncompletedTodosTags = uncompletedTodos.map(onCreateTodoItemFn);
-  const completedTodos = todos.filter(todo => todo.completed);
-  const completedTodosTags = completedTodos.map(onCreateTodoItemFn);
-
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [todoForModal, setTodoForModal] = React.useState(null);
-
+  const openModalForCreate = () => {
+    setIsModalOpen(true);
+    setTodoForModal(null);
+  };
+  
   const onModalClose = () => {
     setIsModalOpen(false);
     setTodoForModal(null);
-  }
-  const onTodoCreate = (title, description, subtasks) => {
-    setTodos(todos => [...todos,
-    {
-      id: uuidv4(),
-      title: title,
-      description: description,
-      completed: false,
-      subtasks
-    }]);
-  };
-
-  const onDeleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id));
   }
 
   const onEditModalOpen = (todo) => {
@@ -150,39 +155,31 @@ function App() {
     setTodoForModal(todo);
   }
 
-  const onChangeTodo = (id, todoChanges) => {
+  const onCreateTodoItemFn = (todo) => (
+    <div className="fade-in" key={todo.id}>
+      <TodoItem
+        todo={todo}
+        onDeleteTodo={() => onDeleteTodo(todo.id)}
+        onChangeTodo={onChangeTodo}
+        onEditModalOpen={() => onEditModalOpen(todo)}
+        onSubtaskCreate={onSubtaskCreate}
+        onEditSubtask={onEditSubtask}
+        onDeleteSubtask={onDeleteSubtask}
+        onChangeSubtask={onChangeSubtask}
+      />
+    </div>
+  );
 
-    setTodos(todos => todos.map(todo => {
-      if (todo.id !== id) {
-        return todo;
-      }
-      const newTodo = { ...todo };
-      if (todoChanges.subtasks) {
-        newTodo.subtasks = todoChanges.subtasks;
-      } else {
-        for (const [key, value] of Object.entries(todoChanges)) {
-          newTodo[key] = value;
-        }
-      }
-      if (todoChanges.subtasks) {
-        newTodo.subtasks = todoChanges.subtasks
-      }
+  // --- Render ---
+  const uncompletedTodos = todos.filter(todo => !todo.completed);
+  const completedTodos = todos.filter(todo => todo.completed);
 
-      return newTodo;
-    }));
+  if (isLoading) {
+    return <Loader />;
   }
-
-  const onTodoModalUpdate = (id, title, description) => {
-    onChangeTodo(id, {
-      title,
-      description,
-    });
-  }
-
-  
 
   return (
-    <div className="App">
+    <div className={`App ${isDarkMode ? "dark-mode" : ""}`}>
       <div className="app-container">
         <Modal
           isModalOpen={isModalOpen}
@@ -191,23 +188,29 @@ function App() {
           onTodoCreate={onTodoCreate}
           onTodoUpdate={onTodoModalUpdate}
           onSubtaskCreate={onSubtaskCreate}
-        >
-        </Modal>
+        />
 
         <Card>
           <h1>My todos</h1>
-          <Button onClick={() => { setIsModalOpen(true); setTodoForModal(null) }}>Add +</Button>
+          <Button onClick={openModalForCreate}>Add +</Button>
+
+          <Button onClick={() => setIsDarkMode(prev => !prev)}>
+            {isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          </Button>
+
           <div className="list-container">
-            {uncompletedTodosTags}
+            {uncompletedTodos.map(onCreateTodoItemFn)}
           </div>
+
           <div className="separator"></div>
+
           <h2>Completed</h2>
           <div className="list-container">
-            {completedTodosTags}
+            {completedTodos.map(onCreateTodoItemFn)}
           </div>
         </Card>
       </div>
-    </div>
+    </div> 
   );
 }
 
